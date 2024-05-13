@@ -10,6 +10,7 @@ const io = new Server({
 
 io.listen(3001);
 let connectedUsers = new Map();
+let userRoom = new Map();
 
 io.on("connect", (socket) => {
   socket.on("login", async (data) => {
@@ -48,6 +49,7 @@ io.on("connect", (socket) => {
     }
 
     const joinedProject = await ProjectService.joinProject(userID, join_token);
+
     const projects = await ProjectService.getProjects(userID);
     socket.emit("join_project_response", { success: true, joinedProject });
     socket.emit("my_projects", projects);
@@ -76,46 +78,54 @@ io.on("connect", (socket) => {
     socket.emit("project_users", users);
   });
 
-  socket.on("join_room", (data) => {
-    const { roomID, token } = data;
+  socket.on("join_room", async (data) => {
+    const { previousRoomID, roomID, token } = data;
+    const userID = verifyJWTToken(token);
+    if (!userID) return socket.emit("join_room_failed", { success: false });
+
+    if (previousRoomID) {
+      socket.leave(previousRoomID);
+    }
+
+    socket.join(roomID);
+    const messages = await ProjectService.getRoomChat(roomID);
+
+    io.to(roomID).emit("previous_messages", {
+      roomID: roomID,
+      messages: messages,
+    });
+    console.log(messages)
+  });
+
+  socket.on("send_message", async (data) => {
+    const { roomID, message, fileData, token } = data;
+
     const userID = verifyJWTToken(token);
 
-    // Kullanıcıyı ilgili odaya katılma işlemi
-    socket.join(roomID);
-    let previousRoomID = null;
+    if (!userID) return socket.emit("send_message_failed", { success: true });
 
-    socket.on("send_message", (data) => {
-      const { roomID, message, fileData } = data;
+    const user = await ProjectService.getUser(userID);
 
-      if (fileData) {
-        io.to(roomID).emit("receive_message", {
-          sender: userID,
-          content: message,
-          file: fileData,
-        });
-        console.log("File gitti.*>>>");
-        return;
-      }
+    const res = await ProjectService.sendRoomMessage(
+      userID,
+      roomID,
+      message,
+      fileData
+    );
 
+    if (fileData) {
       io.to(roomID).emit("receive_message", {
-        sender: userID,
+        sender: user,
         content: message,
-        file: null,
+        file: fileData,
       });
-      console.log("Mesaj gitti.*>>>");
-      previousRoomID = roomID;
-    });
+      return;
+    }
 
-    socket.on("leave_room", (data) => {
-      const { roomID } = data;
-      socket.leave(roomID);
-      console.log(`Kullanıcı odadan ayrıldı: ${roomID}`);
-
-      if (previousRoomID) {
-        socket.leave(previousRoomID);
-        console.log(`Kullanıcı odadan ayrıldı: ${previousRoomID}`);
-        previousRoomID = null;
-      }
+    io.to(roomID).emit("receive_message", {
+      sender: user,
+      content: message,
+      file: null,
     });
   });
 
@@ -128,7 +138,29 @@ io.on("connect", (socket) => {
       return;
     }
 
-    //const user = await ProjectService.getUser(senderID);
+    const res = await ProjectService.sendPrivateMessage(senderID, recipientID, message, fileData);
+
+
+    const recipientSocket = findSocketByUserID(recipientID);
+    if (recipientSocket) {
+      recipientSocket.emit("private_message", {
+        sender: senderID,
+        senderName: senderName,
+        content: message,
+      });
+    }
+  });
+
+  socket.on("load_private_message", async (data) => {
+    const { recipientID, token } = data;
+    const senderID = verifyJWTToken(token);
+
+    if (!senderID) {
+      socket.emit("send_private_message_response", { success: false });
+      return;
+    }
+
+    const res = await ProjectService.sendPrivateMessage(senderID, recipientID, message, fileData);
 
     // Mesajı alıcının socketine gönderme
     const recipientSocket = findSocketByUserID(recipientID);

@@ -16,10 +16,13 @@ model chat_room {
 }
 
 model user {
-  id       Int       @id @default(autoincrement())
-  username String    @unique @db.VarChar(255)
-  password String    @db.VarChar(255)
-  projects project[] @relation("projectTouser")
+  id                   Int                    @id @default(autoincrement())
+  username             String                 @unique @db.VarChar(255)
+  password             String                 @db.VarChar(255)
+  room_message         room_message[]
+  projects             project[]              @relation("projectTouser")
+  sentPrivateMessages   private_room_message[] @relation("Sender")
+  receivedPrivateMessages   private_room_message[] @relation("Receiver")
 }
 
 model project {
@@ -38,10 +41,30 @@ model room_message {
   id        Int       @id @default(autoincrement())
   room_id   Int
   message   String    @db.VarChar(255)
+  file      String?   @db.Text
   user_id   Int
   chat_room chat_room @relation(fields: [room_id], references: [id])
+  user      user      @relation(fields: [user_id], references: [id])
 
   @@index([room_id], map: "room_message_room_id_fkey")
+  @@index([user_id], map: "room_message_user_id_fkey")
+}
+
+model private_room_message {
+  id          Int     @id @default(autoincrement())
+  sender_id   Int
+  receiver_id Int
+  file        String? @db.Text
+  message     String  @db.VarChar(255)
+  // Gönderen kullanıcı ilişkisi
+  sender      user    @relation("Sender", fields: [sender_id], references: [id])
+
+  // Alıcı kullanıcı ilişkisi
+  receiver user  @relation("Receiver", fields: [receiver_id], references: [id])
+
+  // İndeksler
+  @@index([sender_id], name: "private_message_sender_id_index")
+  @@index([receiver_id], name: "private_message_receiver_id_index")
 }
 
 model user_project {

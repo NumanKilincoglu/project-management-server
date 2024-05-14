@@ -168,6 +168,7 @@ async function getRoomChat(projectID) {
         },
         message: true,
         file: true,
+        created_at: true,
       },
       where: {
         room_id: projectID,
@@ -188,11 +189,10 @@ async function sendRoomMessage(userID, roomID, msg, file) {
     });
 
     if (!chatRoom) {
-
       chatRoom = await prisma.chat_room.create({
         data: {
           id: roomID,
-          project_id: roomID, 
+          project_id: roomID,
           created_at: new Date(),
         },
       });
@@ -200,10 +200,8 @@ async function sendRoomMessage(userID, roomID, msg, file) {
 
     let fileData = null;
 
-    if(file) fileData = file.fileData;
+    if (file) fileData = file.fileData;
 
-    console.log( '???????')
-    // Now create the room_message and connect it to the chat_room
     const project = await prisma.room_message.create({
       data: {
         message: msg,
@@ -215,13 +213,11 @@ async function sendRoomMessage(userID, roomID, msg, file) {
         },
         user: {
           connect: {
-            id: userID
-          }
-        }
+            id: userID,
+          },
+        },
       },
     });
-
-    console.log(project, "******")
 
     if (project) return true;
     return false;
@@ -233,21 +229,16 @@ async function sendRoomMessage(userID, roomID, msg, file) {
 
 async function sendPrivateMessage(senderID, receiverID, msg, file) {
   try {
-
-
     const res = await prisma.private_room_message.create({
       data: {
         message: msg,
         file: file,
         receiver_id: receiverID,
-        sender_id: senderID
-      }
+        sender_id: senderID,
+      },
     });
 
-    console.log(res, "******")
-
-    if (res) return true;
-    return false;
+    return res;
   } catch (error) {
     console.log(error);
     return false;
@@ -256,20 +247,30 @@ async function sendPrivateMessage(senderID, receiverID, msg, file) {
 
 async function getPrivateChat(senderID, receiverID) {
   try {
-
+    console.log(senderID, receiverID, "***");
     const res = await prisma.private_room_message.findMany({
       select: {
-        user: {
+        id:true,
+        sender: {
           select: {
             id: true,
-            username: true,
-          },
+            username : true
+          }
         },
-        message: true,
-        file: true,
+        file:true,
+        message:true,
+        created_at:true
       },
       where: {
-        room_id: projectID,
+        receiver_id: {
+          in: [senderID, receiverID],
+        },
+        sender_id: {
+          in: [senderID, receiverID],
+        },
+      },
+      orderBy: {
+        id: "asc",
       },
     });
 
@@ -290,7 +291,7 @@ const ProjectService = {
   sendRoomMessage,
   getRoomChat,
   sendPrivateMessage,
-  getPrivateChat
+  getPrivateChat,
 };
 
 export default ProjectService;

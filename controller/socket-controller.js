@@ -94,7 +94,6 @@ io.on("connect", (socket) => {
       roomID: roomID,
       messages: messages,
     });
-    console.log(messages)
   });
 
   socket.on("send_message", async (data) => {
@@ -138,16 +137,27 @@ io.on("connect", (socket) => {
       return;
     }
 
-    const res = await ProjectService.sendPrivateMessage(senderID, recipientID, message, fileData);
+    const response = await ProjectService.sendPrivateMessage(
+      senderID,
+      recipientID,
+      message,
+      fileData
+    );
 
+    let messageData = null;
+    if (response) {
+      messageData = {
+        sender: senderName,
+        content: response.message,
+        file: response.file,
+        created_at: response.created_at,
+      };
+    }
 
     const recipientSocket = findSocketByUserID(recipientID);
+
     if (recipientSocket) {
-      recipientSocket.emit("private_message", {
-        sender: senderID,
-        senderName: senderName,
-        content: message,
-      });
+      recipientSocket.emit("private_message", messageData);
     }
   });
 
@@ -160,17 +170,11 @@ io.on("connect", (socket) => {
       return;
     }
 
-    const res = await ProjectService.sendPrivateMessage(senderID, recipientID, message, fileData);
+    const messages = await ProjectService.getPrivateChat(senderID, recipientID);
 
-    // Mesajı alıcının socketine gönderme
-    const recipientSocket = findSocketByUserID(recipientID);
-    if (recipientSocket) {
-      recipientSocket.emit("private_message", {
-        sender: senderID, // Gönderen istemcinin kimliği
-        senderName: senderName,
-        content: message,
-      });
-    }
+    socket.emit("get_private_messages", {
+      messages,
+    });
   });
 
   socket.on("my_projects", async (data) => {
@@ -181,7 +185,6 @@ io.on("connect", (socket) => {
     const tokenResponse2 = await ProjectService.getProjects(userID);
     socket.emit("my_projects", tokenResponse2);
 
-    console.log(connectedUsers);
   });
 
   socket.on("disconnect", async () => {
@@ -190,7 +193,6 @@ io.on("connect", (socket) => {
       connectedUsers.delete(socketUserID);
       console.log("User Disconnected: UserID->", socketUserID);
     }
-    console.log("User Disconnected: UserID-> Unknown");
   });
 });
 

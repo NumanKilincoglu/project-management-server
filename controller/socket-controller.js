@@ -5,6 +5,7 @@ import ProjectService from "../service/project-service.js";
 const io = new Server({
   cors: {
     origin: "*",
+    methods: ["GET", "POST"]
   },
 });
 

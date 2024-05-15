@@ -8,7 +8,7 @@ const expiresIn = 2 * 60 * 60 * 10;
 
 export function createJWTToken(user) {
   const now = Date.now() / 1000;
-  const expirationTime = now + 72000;
+  const expirationTime = now + 7200000;
 
   const payload = {
     userId: user.id,

@@ -185,7 +185,7 @@ async function getRoomChat(projectID) {
 async function sendRoomMessage(userID, roomID, msg, file) {
   try {
     let chatRoom = await prisma.chat_room.findUnique({
-      where: { id: roomID },
+      where: { id: roomID, project_id: roomID },
     });
 
     if (!chatRoom) {

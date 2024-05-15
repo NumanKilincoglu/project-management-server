@@ -5,7 +5,6 @@ let connectedUsers = new Map();
 let userRoom = new Map();
 
 io.on("connect", (socket) => {
-  console.log("burda")
   socket.on("login", async (data) => {
     const userID = verifyJWTToken(data.token);
     console.log("User Connected: UserID->", userID);
@@ -104,6 +103,7 @@ io.on("connect", (socket) => {
       message,
       fileData
     );
+    console.log(res, "*****")
 
     if (fileData) {
       io.to(roomID).emit("receive_message", {

@@ -3,7 +3,6 @@ import { Server } from "socket.io";
 import ProjectService from "../service/project-service.js";
 
 const io = new Server({
-  allowEIO3:true,
   cors: {
     origin: "*",
   },

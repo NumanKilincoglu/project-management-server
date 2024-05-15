@@ -14,7 +14,7 @@ const app = express();
 dotenv.config();
 app.use(morgan("dev"));
 
-const allowedOrigins = ["*"];
+const allowedOrigins = ["*", "http://localhost:8080"];
 
 app.use(
   cors({
@@ -46,7 +46,6 @@ let connectedUsers = new Map();
 let userRoom = new Map();
 
 io.on("connect", (socket) => {
-  console.log("burda");
   socket.on("login", async (data) => {
     const userID = verifyJWTToken(data.token);
     console.log("User Connected: UserID->", userID);

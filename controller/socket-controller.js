@@ -103,7 +103,6 @@ io.on("connect", (socket) => {
       message,
       fileData
     );
-    console.log(res, "*****")
 
     if (fileData) {
       io.to(roomID).emit("receive_message", {

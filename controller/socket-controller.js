@@ -1,19 +1,11 @@
 import { verifyJWTToken } from "../utils/jwt.js";
-import { Server } from "socket.io";
 import ProjectService from "../service/project-service.js";
 
-const io = new Server({
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
-  },
-});
-
-io.listen(3001);
 let connectedUsers = new Map();
 let userRoom = new Map();
 
 io.on("connect", (socket) => {
+  console.log("burda")
   socket.on("login", async (data) => {
     const userID = verifyJWTToken(data.token);
     console.log("User Connected: UserID->", userID);

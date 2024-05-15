@@ -247,7 +247,7 @@ async function sendPrivateMessage(senderID, receiverID, msg, file) {
 
 async function getPrivateChat(senderID, receiverID) {
   try {
-    console.log(senderID, receiverID, "***");
+
     const res = await prisma.private_room_message.findMany({
       select: {
         id:true,
